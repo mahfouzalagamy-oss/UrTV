@@ -115,7 +115,9 @@ final class HomeCard {
         try (Cursor c = activity.getContentResolver().query(CONFIG, null, null, null, null)) {
             if (c == null || !c.moveToFirst()) return null;
             String frag = c.getString(0), panel = c.getString(1);
-            if (frag == null || panel == null || "none".equals(panel)) return null;
+            if (frag == null || panel == null) return null;
+            // no card picked: still the morning and evening adhkar in their hours, if on (the page shows nothing else)
+            if ("none".equals(panel) && !frag.matches("(.*&)?adhkar=1(&.*)?")) return null;
             frag = frag.replaceAll("(^|&)(panel|week)=[^&]*", "");   // the screensaver's own card choice
             return "file:///android_asset/web/tv.html#" + frag + "&panel=" + panel + "&widget=1";
         } catch (RuntimeException e) {

@@ -19,7 +19,7 @@ public class AdhanReceiver extends BroadcastReceiver {
                     && pm != null && pm.isInteractive()) Reminder.show(c, prayer, at);
         } else if (p.adhanOn() && prayer >= 0 && AdhanTimes.onTime(at, System.currentTimeMillis())) {
             String voice = prayer == 0 ? p.adhanFajr() : p.adhanVoice();
-            if (!voice.isEmpty()) AdhanService.start(c, voice, false);
+            if (!voice.isEmpty()) AdhanService.start(c, Adhan.resolve(c, voice, prayer == 0), false);
         }
         final PendingResult r = goAsync();
         final Context app = c.getApplicationContext();

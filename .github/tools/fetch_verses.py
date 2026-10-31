@@ -64,6 +64,9 @@ REFS = [
     "30:20", "30:23", "30:24", "31:16", "35:41", "36:40", "39:62", "42:12", "42:20", "51:47",
     "55:9", "57:9", "60:8", "67:19",
 ]
+# the Quran in the morning and evening adhkar (src/template.html ADHKAR): Ayat al-Kursi and the last three surahs,
+# whole. Kept apart (verses/adhkar.json): they are not verses of the day.
+ADHKAR_REFS = ["2:255"] + [f"112:{i}" for i in range(1, 5)] + [f"113:{i}" for i in range(1, 6)] + [f"114:{i}" for i in range(1, 7)]
 EDITION = "quran-simple"   # standard Arabic script with diacritics; renders in any Arabic font
 
 
@@ -87,6 +90,11 @@ def main():
         print(ref, d["surah"]["name"], len(d["text"].split()), "words")
     Path("verses").mkdir(exist_ok=True)
     Path("verses/verses.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    adhkar = []
+    for ref in ADHKAR_REFS:
+        d = get(f"https://api.alquran.cloud/v1/ayah/{ref}/{EDITION}")["data"]
+        adhkar.append({"ref": ref, "surah": d["surah"]["name"], "ayah": d["numberInSurah"], "text": d["text"]})
+    Path("verses/adhkar.json").write_text(json.dumps(adhkar, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

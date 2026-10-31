@@ -29,12 +29,12 @@ def plain(s):
     return re.sub("[\u064B-\u065F\u0670]", "", s)
 
 
-def verses_for_screen():
+def verses_for_screen(name="verses.json"):
     """assets/shared/verses.json as fetched from the Quran API (.github/tools/fetch_verses.py), made fit for the font:
     the pause marks and ۞ are left out (Thmanyah has no glyph for them); letters and harakat stay as fetched.
     The API puts the basmala in front of the first verse of a surah; it is not part of that verse, so it goes
     (Al-Fatiha's first verse is the basmala itself). Surah names are shown plain, without harakat."""
-    path = ROOT / "assets/shared/verses.json"
+    path = ROOT / "assets/shared" / name
     if not path.is_file():
         return []
     out = []
@@ -46,7 +46,7 @@ def verses_for_screen():
         # NFC first: the API writes آ as ا + madda, which stripping the harakat would turn into ا (ال عمران)
         name = re.sub("[\u064B-\u065F\u0670\u06D6-\u06ED]", "", unicodedata.normalize("NFC", v["surah"]))
         name = name.replace("\u0671", "ا")   # ٱ: no glyph in Thmanyah
-        out.append({"text": text, "surah": name, "ayah": v["ayah"]})
+        out.append({"text": text, "surah": name, "ayah": v["ayah"], "ref": v["ref"]})
     return out
 
 
@@ -227,6 +227,8 @@ def main():
     # and the English names: football-data.org's clubs are matched to the followed ones by name
     html = html.replace("__TEAMS_EN__", js_json({c["id"]: c["en"] for c in clubs if c.get("id") and c.get("en")}))
     html = html.replace("__VERSES__", js_json(verses_for_screen()))
+    # the Quran in the morning and evening adhkar, fetched like the verses (.github/tools/fetch_verses.py)
+    html = html.replace("__ADHKAR_QURAN__", js_json(verses_for_screen("adhkar.json")))
     html = html.replace("__HADITH__", js_json(hadith_for_screen()))   # checked by CI
 
     bg_dir = ROOT / "assets/backgrounds"

@@ -171,6 +171,10 @@
   .week li.quote .nar{font-size:.66em;color:#B9AE96}
   .week li.quote .nar .saw{font-size:1.45em}
   .week li.src{border-bottom:none;padding:.6vh 0 0;font-size:clamp(12px,.95vw,18px);color:#D6AF6B}
+  /* the adhkar: one at a time; a long one in a smaller size so it fits the card */
+  .week li.quote.dk.long{font-size:clamp(14px,1.2vw,23px);line-height:1.65}
+  .week li.quote.dk.xlong{font-size:clamp(12px,1.02vw,20px);line-height:1.6}
+  .week li.quote .vn{font-size:.62em;color:#D6AF6B}
   .week .empty{color:#9A9078;font-size:clamp(14px,1.1vw,21px);font-weight:300;margin-top:1vh}
 
   .dates{text-align:right;flex-shrink:0}
@@ -390,6 +394,7 @@ const CONFIG = {
   widget: _Q.get('widget') === '1',
   // #night=1: darken the screen gradually from 21:00 to 07:00 (a setting in the app, off by default)
   nightDim: _Q.get('night') === '1',
+  adhkar: _Q.get('adhkar') === '1',   // morning and evening adhkar beside the clock in their hours (settings)
 };
 // Aladhan's method for the fallback (no mosque, or Mawaqit unreachable): Umm al-Qura in Saudi Arabia, else MWL
 const setMethod = () => { CONFIG.prayerMethod = CONFIG.timezone === 'Asia/Riyadh' ? 4 : 3; };
@@ -985,6 +990,10 @@ function renderMatches(turn){
   const now = Date.now(), shown = new Set();
   const slots = CONFIG.teamIds.map(id => matchSlot(id, now, shown)).filter(Boolean);
   const row = document.getElementById('match-row');
+  // no team picked: the place stays empty (no label, no «لا شيء هذا الأسبوع»)
+  const box = row.closest('.p-match');
+  if(box) box.style.visibility = CONFIG.teamIds.length ? '' : 'hidden';
+  if(!CONFIG.teamIds.length){ row.innerHTML = ''; return; }
   if(!slots.length){ if(!MATCHES_LOADED && row.firstElementChild) return; row.innerHTML = '<div class="none-week">لا شيء هذا الأسبوع</div>'; return; }
   const per = CONFIG.matchesPerPage, pages = Math.ceil(slots.length / per);
   if(turn) MATCH_PAGE++;
@@ -1165,6 +1174,115 @@ async function fetchT(url, ms){
 // Yahoo has no CORS headers: try it directly (works inside the app), then through public CORS gateways
 const WEEK_ROWS = 5;   // rows on the card beside the clock (a longer list pages through)
 
+// ---- the morning and evening adhkar (settings: on or off). Morning from the Fajr adhan to 09:00, evening
+// 21:00 to midnight, the place's time: then they take the card beside the clock whatever card is picked, one
+// dhikr at a time (longer ones stay longer). The Quran in them is fetched (assets/shared/adhkar.json, by CI from
+// the Quran API, like the verses of the day), never typed; without it those items are left out.
+const ADHKAR_QURAN = __ADHKAR_QURAN__;
+const ADHKAR_COMMON_TAIL = [
+  {t: 'اللهم عافني في بدني، اللهم عافني في سمعي، اللهم عافني في بصري، لا إله إلا أنت. اللهم إني أعوذ بك من الكفر والفقر، وأعوذ بك من عذاب القبر، لا إله إلا أنت', n: 3},
+  {t: 'حسبي الله لا إله إلا هو، عليه توكلت وهو رب العرش العظيم', n: 7},
+  {t: 'بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء، وهو السميع العليم', n: 3},
+  {t: 'رضيت بالله ربا، وبالإسلام دينا، وبمحمد صلى الله عليه وسلم نبيا', n: 3},
+  {t: 'يا حي يا قيوم برحمتك أستغيث، أصلح لي شأني كله، ولا تكلني إلى نفسي طرفة عين', n: 1},
+];
+const ADHKAR = {
+  morning: {title: 'أذكار الصباح', items: [
+    {q: ['2:255'], src: 'آية الكرسي', n: 1},
+    {q: ['112:1', '112:2', '112:3', '112:4'], src: 'سورة الإخلاص', n: 3},
+    {q: ['113:1', '113:2', '113:3', '113:4', '113:5'], src: 'سورة الفلق', n: 3},
+    {q: ['114:1', '114:2', '114:3', '114:4', '114:5', '114:6'], src: 'سورة الناس', n: 3},
+    {t: 'أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير. رب أسألك خير ما في هذا اليوم وخير ما بعده، وأعوذ بك من شر ما في هذا اليوم وشر ما بعده. رب أعوذ بك من الكسل وسوء الكبر، رب أعوذ بك من عذاب في النار وعذاب في القبر', n: 1},
+    {t: 'اللهم بك أصبحنا، وبك أمسينا، وبك نحيا، وبك نموت، وإليك النشور', n: 1},
+    {t: 'اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت، أعوذ بك من شر ما صنعت، أبوء لك بنعمتك علي، وأبوء بذنبي فاغفر لي، فإنه لا يغفر الذنوب إلا أنت', src: 'سيد الاستغفار', n: 1},
+    ...ADHKAR_COMMON_TAIL,
+    {t: 'أصبحنا على فطرة الإسلام، وعلى كلمة الإخلاص، وعلى دين نبينا محمد صلى الله عليه وسلم، وعلى ملة أبينا إبراهيم حنيفا مسلما وما كان من المشركين', n: 1},
+    {t: 'سبحان الله وبحمده عدد خلقه، ورضا نفسه، وزنة عرشه، ومداد كلماته', n: 3},
+    {t: 'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير', n: 10},
+    {t: 'سبحان الله وبحمده', n: 100},
+  ]},
+  evening: {title: 'أذكار المساء', items: [
+    {q: ['2:255'], src: 'آية الكرسي', n: 1},
+    {q: ['112:1', '112:2', '112:3', '112:4'], src: 'سورة الإخلاص', n: 3},
+    {q: ['113:1', '113:2', '113:3', '113:4', '113:5'], src: 'سورة الفلق', n: 3},
+    {q: ['114:1', '114:2', '114:3', '114:4', '114:5', '114:6'], src: 'سورة الناس', n: 3},
+    {t: 'أمسينا وأمسى الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير. رب أسألك خير ما في هذه الليلة وخير ما بعدها، وأعوذ بك من شر ما في هذه الليلة وشر ما بعدها. رب أعوذ بك من الكسل وسوء الكبر، رب أعوذ بك من عذاب في النار وعذاب في القبر', n: 1},
+    {t: 'اللهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير', n: 1},
+    {t: 'اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت، أعوذ بك من شر ما صنعت، أبوء لك بنعمتك علي، وأبوء بذنبي فاغفر لي، فإنه لا يغفر الذنوب إلا أنت', src: 'سيد الاستغفار', n: 1},
+    ...ADHKAR_COMMON_TAIL,
+    {t: 'أمسينا على فطرة الإسلام، وعلى كلمة الإخلاص، وعلى دين نبينا محمد صلى الله عليه وسلم، وعلى ملة أبينا إبراهيم حنيفا مسلما وما كان من المشركين', n: 1},
+    {t: 'أعوذ بكلمات الله التامات من شر ما خلق', n: 3},
+    {t: 'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير', n: 10},
+    {t: 'سبحان الله وبحمده', n: 100},
+  ]},
+};
+/** the items to show: a Quran item only when all its verses were fetched */
+function adhkarItems(kind){
+  const byRef = {};
+  for(const v of ADHKAR_QURAN) byRef[v.ref] = v;
+  return ADHKAR[kind].items.filter(it => !it.q || it.q.every(r => byRef[r])).map(it => !it.q ? it : Object.assign({}, it, {
+    verses: it.q.map(r => byRef[r]),
+    src: it.src + (it.q.length === 1 ? ' · ' + byRef[it.q[0]].surah + ' ' + ar(byRef[it.q[0]].ayah) : ''),
+  }));
+}
+/** 'morning' | 'evening' | null now (the place's time); morning starts at today's Fajr (05:00 until it is known) */
+function adhkarNow(){
+  if(!CONFIG.adhkar) return null;
+  const p = riyadhParts(), now = p.h * 60 + p.mi;
+  let fajr = 5 * 60;
+  if(DAY_TIMES && DAY_TIMES.Fajr){ const [h, mi] = String(DAY_TIMES.Fajr).split(':').map(Number); if(!isNaN(h)) fajr = h * 60 + mi; }
+  if(now >= fajr && now < 9 * 60) return 'morning';
+  if(now >= 21 * 60) return 'evening';
+  return null;
+}
+const repText = n => n === 1 ? 'مرة واحدة' : n === 100 ? 'مئة مرة' : `${ar(n)} ${n <= 10 ? 'مرات' : 'مرة'}`;
+let ADHKAR_KIND = null, ADHKAR_I = 0, ADHKAR_AT = 0;
+function adhkarRows(){
+  const items = ADHKAR_KIND ? adhkarItems(ADHKAR_KIND) : [];
+  if(!items.length) return [];
+  const it = items[ADHKAR_I % items.length];
+  const body = it.verses
+    ? `<span class="orn">﴿</span>${it.verses.map(v => esc(v.text) + (it.verses.length > 1 ? ` <span class="vn">(${ar(v.ayah)})</span>` : '')).join(' ')}<span class="orn">﴾</span>`
+    : esc(it.t).replace(/صلى الله عليه وسلم/g, '<span class="saw">ﷺ</span>');
+  const len = it.verses ? it.verses.map(v => v.text).join(' ').length : it.t.length;
+  return [`<li class="quote dk${len > 260 ? ' xlong' : len > 150 ? ' long' : ''}">${body}</li>`,
+          `<li class="src">${it.src ? esc(it.src) + ' · ' : ''}${repText(it.n)} · ${ar(ADHKAR_I % items.length + 1)} من ${ar(items.length)}</li>`];
+}
+/** how long a dhikr stays: by its length, 15 s to a minute */
+function adhkarDwell(){
+  const items = ADHKAR_KIND ? adhkarItems(ADHKAR_KIND) : [];
+  const it = items[ADHKAR_I % (items.length || 1)];
+  if(!it) return 30000;
+  const len = it.verses ? it.verses.map(v => v.text).join(' ').length : it.t.length;
+  return Math.max(15000, Math.min(60000, 8000 + len * 160));
+}
+/** every few seconds: the adhkar take the card in their hours and give it back after; the next dhikr in turn */
+function tickAdhkar(){
+  const kind = adhkarNow(), w = document.querySelector('.week');
+  if(!w) return;
+  if(kind && PANEL !== 'adhkar'){
+    ADHKAR_KIND = kind; ADHKAR_I = 0; ADHKAR_AT = Date.now();
+    PANEL = 'adhkar'; w.style.display = '';
+    swapCard();
+  } else if(kind && PANEL === 'adhkar'){
+    if(kind !== ADHKAR_KIND){ ADHKAR_KIND = kind; ADHKAR_I = 0; ADHKAR_AT = Date.now(); swapCard(); }
+    else if(Date.now() - ADHKAR_AT >= adhkarDwell()){ ADHKAR_I++; ADHKAR_AT = Date.now(); swapCard(); }
+  } else if(!kind && PANEL === 'adhkar'){
+    ADHKAR_KIND = null;
+    PANEL = CONFIG.panel === 'auto' ? CARDS[0] : CONFIG.panel;
+    if(CONFIG.panel === 'none'){ w.style.display = 'none'; return; }
+    swapCard();
+  }
+}
+/** the card's content changes with the fade (as in «auto») */
+function swapCard(){
+  const w = document.querySelector('.week');
+  LIST_PAGE = 0;
+  w.classList.add('swap');
+  clearTimeout(rotateCard.t);
+  rotateCard.t = setTimeout(() => { renderPanel(true); requestAnimationFrame(() => w.classList.remove('swap')); }, 380);
+}
+
 // ---- the card beside the clock: one of several contents, picked in the app
 let FORECAST = [];
 try{ FORECAST = JSON.parse(localStorage.getItem('forecast:' + location.hash) || '[]') || []; }catch(e){}
@@ -1180,11 +1298,11 @@ const wants = k => CONFIG.panel === 'auto' ? CARDS.includes(k) : CONFIG.panel ==
 function hasCard(k){
   if(k === 'prayers') return PRAYERS.length > 0;
   if(k === 'forecast') return FORECAST.length > 0;
-  if(k === 'matches') return matchRows().length > 0;
+  if(k === 'matches') return CONFIG.teamIds.length > 0 && matchRows().length > 0;   // no team picked: never in turn
   return true;
 }
 function rotateCard(){
-  if(CONFIG.panel !== 'auto') return;
+  if(CONFIG.panel !== 'auto' || PANEL === 'adhkar') return;
   for(let i = 1; i <= CARDS.length; i++){
     const k = CARDS[(CARDS.indexOf(PANEL) + i) % CARDS.length];
     if(!hasCard(k)) continue;
@@ -1210,6 +1328,7 @@ function renderPanel(animate){
   else if(P === 'forecast') rows = forecastRows();
   else if(P === 'matches') rows = matchRows();
   else if(P === 'verse'){ const q = quoteOfDay(); hd.textContent = q.title; rows = q.rows; }
+  else if(P === 'adhkar'){ hd.textContent = ADHKAR_KIND ? ADHKAR[ADHKAR_KIND].title : ''; rows = adhkarRows(); }
   if(PANEL_TITLE[P]) hd.textContent = PANEL_TITLE[P];
   if(!rows.length){
     ul.classList.remove('flip');
@@ -1569,7 +1688,7 @@ function boot(){
   applyBackground(true);
   loadPhotoIndex().then(() => applyBackground(true));
   setInterval(() => applyBackground(false), 60*1000);
-  tickClock(); tickDates(); tickRamadan();
+  tickClock(); tickDates(); tickRamadan(); renderMatches(false);
   if(CONFIG.panel === 'none') document.querySelector('.week').style.display = 'none';
   else renderPanel(false);   // its own data arrives with prayers, weather, matches
   loadPrayers(); loadMatches(); loadWeather();
@@ -1579,6 +1698,7 @@ function boot(){
   setInterval(tickCountdown, 1000);
   setInterval(()=>{ tickDates(); tickPrayer(); tickRamadan(); if(PANEL === 'prayers') renderPanel(false); }, 15000);
   setInterval(rotateCard, ROTATE_MS);
+  tickAdhkar(); setInterval(tickAdhkar, 3000);
   setInterval(() => renderMatches(false), 60000);
   setInterval(() => renderMatches(true), CONFIG.matchPageMs);
   setInterval(loadLive, 2*60000);
@@ -1619,7 +1739,10 @@ function bootWidget(){
   if(CONFIG.autoLocation && (wants('prayers') || wants('forecast')))
     locate(false).then(changed => { if(changed){ if(wants('prayers')) loadPrayers(); if(wants('forecast')) loadWeather(); } });
   renderPanel(false);
-  if(wants('prayers')){ loadPrayers(); setInterval(loadPrayers, 6*3600*1000); setInterval(() => { if(PANEL === 'prayers') renderPanel(false); }, 15000); }
+  if(wants('prayers') || CONFIG.adhkar){ loadPrayers(); setInterval(loadPrayers, 6*3600*1000); }   // the adhkar start at Fajr
+  if(wants('prayers')) setInterval(() => { if(PANEL === 'prayers') renderPanel(false); }, 15000);
+  if(CONFIG.panel === 'none') document.querySelector('.week').style.display = 'none';
+  tickAdhkar(); setInterval(tickAdhkar, 3000);
   if(wants('forecast')){ loadWeather(); setInterval(loadWeather, 30*60*1000); }
   if(wants('matches')){ loadMatches(); setInterval(loadMatches, 30*60*1000); setInterval(loadLive, 2*60000); }
   setInterval(rotateCard, ROTATE_MS);

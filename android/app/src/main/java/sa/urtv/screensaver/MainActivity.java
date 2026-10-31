@@ -9,12 +9,14 @@ import android.webkit.WebView;
 
 /** Full-screen preview of the screensaver; any remote key closes it. */
 public class MainActivity extends Activity {
+    /** started by IdleWatch over an app: then the TV may still turn itself off on its own timer */
+    static final String IDLE = "idle";
     private WebView web;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (!getIntent().getBooleanExtra(IDLE, false)) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         web = ScreenView.create(this);
         setContentView(web);
         web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION

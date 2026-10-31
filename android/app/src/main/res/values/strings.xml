@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">شاشة تلفزيونك</string>
+    <string name="idle_watch_description">يشغّل شاشة التوقف فوق أي تطبيق بعد مدة الخمول المحددة في التلفاز، إذا لم يُضغط أي زر ولا يُعرض فيديو. يرى ضغطات الريموت فقط ليعرف أن التلفاز خامل، ولا يقرأ محتوى الشاشة.</string>
 </resources>

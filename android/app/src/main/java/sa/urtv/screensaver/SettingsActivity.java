@@ -182,12 +182,13 @@ public class SettingsActivity extends Activity {
                 : "football-data.org" + (FdProxy.status(this).isEmpty() ? " · لم يتصل بعد" : " · " + FdProxy.status(this)),
             R.drawable.ic_trophy, new Runnable() { public void run() { askFdKey(); } });
 
-        header("بجانب الساعة");
-        row("المحتوى", Prefs.panelLabel(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
+        // one section, one card setting for both screens (the screensaver beside the clock, and the home screen)
+        header("شاشة تلفزيونك");
+        row("البطاقة على شاشتك", Prefs.panelLabel(prefs.panel()), R.drawable.ic_eye,
+            new Runnable() { public void run() { pickPanel(); } });
+        row("أذكار الصباح والمساء", prefs.adhkar() ? "تعمل · من الفجر حتى ٩ ص، ومن ٩ م حتى ١٢ م" : "متوقفة",
+            R.drawable.ic_star, new Runnable() { public void run() { prefs.setAdhkar(!prefs.adhkar()); render(); } });
 
-        header("الشاشة الرئيسية (تلفزيونك)");
-        row("بطاقة على الشاشة الرئيسية", Prefs.panelLabel(prefs.homePanel()), R.drawable.ic_eye,
-            new Runnable() { public void run() { pickPanel(true); } });
         row("ترتيب التطبيقات المفضلة", null, R.drawable.ic_star,
             new Runnable() { public void run() { openDockSettings(); } });
 
@@ -198,6 +199,8 @@ public class SettingsActivity extends Activity {
             R.drawable.ic_eye, new Runnable() { public void run() { prefs.setNightDim(!prefs.nightDim()); render(); } });
         row("بدء شاشة التوقف بعد", idleLabel(), R.drawable.ic_screensaver,
             new Runnable() { public void run() { pickIdle(); } });
+        row("شاشة التوقف فوق التطبيقات", IdleWatch.enabled(this) ? "تعمل · إن لم يُعرض فيديو" : "متوقفة · اضغط للتفعيل",
+            R.drawable.ic_screensaver, new Runnable() { public void run() { openIdleWatch(); } });
 
         header("التطبيق");
         row("التحديث التلقائي", prefs.autoUpdate() ? "يعمل" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
@@ -281,6 +284,7 @@ public class SettingsActivity extends Activity {
         final List<String> labels = new ArrayList<>();
         if (fajr) { ids.add(""); labels.add("بدون أذان للفجر"); }
         for (String f : Adhan.FAJR_FIRST) if (fajr) { ids.add(f); labels.add(Adhan.label(f)); }
+        ids.add(Adhan.RANDOM); labels.add(Adhan.RANDOM_LABEL);
         for (String[] v : Adhan.VOICES) if (!ids.contains(v[0])) { ids.add(v[0]); labels.add(v[1]); }
         String cur = fajr ? prefs.adhanFajr() : prefs.adhanVoice();
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle(fajr ? "أذان الفجر" : "صوت الأذان")
@@ -335,8 +339,9 @@ public class SettingsActivity extends Activity {
 
     /** Plays the chosen voice now, at the adhan volume; «إيقاف» or Back stops it and puts the volume back. */
     private void testAdhan() {
-        AdhanService.start(this, prefs.adhanVoice(), true);
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(Adhan.label(prefs.adhanVoice()))
+        String voice = Adhan.resolve(this, prefs.adhanVoice(), false);   // «عشوائي»: one of them, named in the title
+        AdhanService.start(this, voice, true);
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(Adhan.label(voice))
             .setMessage("يعمل الأذان الآن")
             .setPositiveButton("إيقاف", null)
             .setOnDismissListener(d -> AdhanService.stop())
@@ -532,17 +537,19 @@ public class SettingsActivity extends Activity {
     }
 
     /** The card beside the screensaver's clock, or (home) the one on the launcher's home screen. */
-    private void pickPanel(final boolean home) {
+    /** The card beside the clock and on the home screen: one choice for both */
+    private void pickPanel() {
         String[] labels = new String[Prefs.PANELS.length];
-        String current = home ? prefs.homePanel() : prefs.panel();
+        String current = prefs.panel();
         int sel = 0;
         for (int i = 0; i < labels.length; i++) {
             labels[i] = Prefs.PANELS[i][1];
             if (Prefs.PANELS[i][0].equals(current)) sel = i;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة")
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("البطاقة على شاشتك")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
-                if (home) prefs.setHomePanel(Prefs.PANELS[i][0]); else prefs.setPanel(Prefs.PANELS[i][0]);
+                prefs.setPanel(Prefs.PANELS[i][0]);
+                prefs.setHomePanel(Prefs.PANELS[i][0]);
                 d.dismiss();
                 render();
             })
@@ -558,6 +565,19 @@ public class SettingsActivity extends Activity {
         }
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle("تبديل الصورة كل")
             .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setPhotoMinutes(Prefs.PHOTO_MINUTES[i]); d.dismiss(); render(); })
+            .show();
+    }
+
+    /** IdleWatch is an accessibility service: only the owner can turn it on, in the TV's own settings */
+    private void openIdleWatch() {
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("شاشة التوقف فوق التطبيقات")
+            .setMessage("تعمل فوق أي تطبيق بعد مدة الخمول إذا لم تضغط أي زر ولا يُعرض فيديو.\n\n"
+                + "في الصفحة التالية اختر «" + getString(R.string.app_name) + "» وفعّله.")
+            .setPositiveButton("فتح الإعدادات", (d, w) -> {
+                try { startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)); }
+                catch (Exception e) { toast("افتحها من إعدادات التلفاز ← إمكانية الوصول"); }
+            })
+            .setNegativeButton("إلغاء", null)
             .show();
     }
 

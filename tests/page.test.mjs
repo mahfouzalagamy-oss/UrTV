@@ -399,6 +399,66 @@ for (const [hash, dimmed] of [['', false], ['night=0', false], ['night=1', true]
   await ctx2.close();
 }
 
+// ---- morning and evening adhkar: they take the card in their hours, whatever card is picked, and give it back
+{
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx.route(/^https?:/, r => r.abort());
+  const at = async (p, h, mi) => p.evaluate(([h, mi]) => {
+    const real = riyadhParts;
+    riyadhParts = () => Object.assign(real(), { h, mi, s: 0 });
+    buildPrayers({ Fajr: '06:10', Sunrise: '07:40', Dhuhr: '12:40', Asr: '15:10', Maghrib: '17:30', Isha: '19:00' });
+    tickAdhkar();
+    const w = document.querySelector('.week');
+    return { panel: PANEL, hd: document.getElementById('week-hd').textContent, shown: w.style.display !== 'none' };
+  }, [h, mi]);
+  const p = await ctx.newPage();
+  await p.goto(page('tv.html') + '#panel=forecast&adhkar=1');
+  await p.waitForTimeout(300);
+  const early = await at(p, 6, 0), morning = await at(p, 6, 15);
+  await p.waitForTimeout(450);
+  const rows = await p.evaluate(() => [...document.querySelectorAll('.week li')].map(x => x.textContent));
+  const hd = await p.evaluate(() => document.getElementById('week-hd').textContent);
+  const later = await at(p, 9, 0), evening = await at(p, 21, 5);
+  await p.waitForTimeout(450);
+  const ehd = await p.evaluate(() => document.getElementById('week-hd').textContent);
+  check('adhkar: not before Fajr, morning from Fajr, the picked card back at 9, evening at 21',
+        early.panel === 'forecast' && morning.panel === 'adhkar' && hd === 'أذكار الصباح' && later.panel === 'forecast'
+        && evening.panel === 'adhkar' && ehd === 'أذكار المساء', JSON.stringify({ early, morning, hd, later, evening, ehd }));
+  check('adhkar: Ayat al-Kursi first, fetched text, with its count', rows.length === 2 && rows[0].replace(/[\u064B-\u0652\u0670]/g, '').includes('الحي القيوم')
+        && rows[1].includes('آية الكرسي') && rows[1].includes('مرة واحدة'), JSON.stringify(rows));
+  // next dhikr after its time
+  const next = await p.evaluate(() => { ADHKAR_AT = 0; tickAdhkar(); return ADHKAR_I; });
+  check('adhkar: the next one in turn after its time', next === 1, String(next));
+  await ctx.close();
+
+  const ctx2 = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx2.route(/^https?:/, r => r.abort());
+  const p2 = await ctx2.newPage();
+  await p2.goto(page('tv.html') + '#panel=none&adhkar=1');
+  await p2.waitForTimeout(300);
+  const nOn = await at(p2, 22, 0), nOff = await at(p2, 1, 0);
+  const p3 = await ctx2.newPage();
+  await p3.goto(page('tv.html') + '#panel=forecast&adhkar=0');
+  await p3.waitForTimeout(300);
+  const off = await at(p3, 7, 0);
+  check('adhkar: shown even with no card (then hidden again); not at all when turned off',
+        nOn.panel === 'adhkar' && nOn.shown && !nOff.shown && off.panel === 'forecast', JSON.stringify({ nOn, nOff, off }));
+  await ctx2.close();
+}
+
+// ---- no team picked: the matches place stays empty, and the card in turn never shows the matches
+{
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx.route(/^https?:/, r => r.abort());
+  const p = await ctx.newPage();
+  await p.goto(page('tv.html') + '#teams=&panel=auto');
+  await p.waitForTimeout(600);
+  const r = await p.evaluate(() => ({ vis: getComputedStyle(document.querySelector('.p-match')).visibility,
+    text: document.getElementById('match-row').textContent.trim(), turn: hasCard('matches') }));
+  check('no team: the matches place empty, never the matches card in turn', r.vis === 'hidden' && r.text === '' && !r.turn, JSON.stringify(r));
+  await ctx.close();
+}
+
 // ---- in the app (#fdnative=1) the page sends no key at all: the app adds it (FdProxy), so no CORS preflight
 {
   const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });

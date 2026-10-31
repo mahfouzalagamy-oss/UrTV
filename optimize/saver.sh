@@ -9,12 +9,13 @@
 #   optimize/saver.sh mosque URL ['اسم']           adhan, iqama and Jumu'a from the mosque's Mawaqit page
 #                                                  (https://mawaqit.net/de/SLUG, or SLUG); `mosque none` = calculated
 #   optimize/saver.sh adhan true                   the adhan at each prayer time (true|false; on by default)
-#   optimize/saver.sh adhan-voice makki-1          makki-1 makki-2 madani aqsa ahmad-jalal-yahya voice-7 voice-8
+#   optimize/saver.sh adhan-voice makki-1          random makki-1 makki-2 madani aqsa ahmad-jalal-yahya voice-7 voice-8
 #                                                  fajr-trabulsi  (Dhuhr, Asr, Maghrib, Isha)
 #   optimize/saver.sh adhan-fajr off               Fajr: off (the default) or one of the voices
 #   optimize/saver.sh adhan-volume 10              the TV volume it plays at (then the volume goes back)
 #   optimize/saver.sh adhan-test | adhan-stop      play the adhan now / stop it
 #   optimize/saver.sh football KEY                 the next five games from football-data.org (a free key; none = off)
+#   optimize/saver.sh adhkar true                  morning (Fajr-09:00) and evening (21:00-24:00) adhkar beside the clock
 #   optimize/saver.sh night false                  dim the screensaver 21:00-07:00 (true|false; off by default)
 #   optimize/saver.sh reminder 30                  notice at the top right N minutes before each adhan (0 = off)
 #   optimize/saver.sh reminder-test                show that notice now
@@ -25,6 +26,8 @@
 #   optimize/saver.sh photos 15                    change the photo every N minutes: 5 10 15 30 60 (default 30)
 #   optimize/saver.sh idle 10                      the TV starts the screensaver after N idle minutes: 1 2 5 10 15 30
 #                                                  (the TV's own timer; left alone unless you run this)
+#   optimize/saver.sh over-apps true               the screensaver over apps too after the idle delay, when no key
+#                                                  was pressed and nothing plays (true|false; an accessibility service)
 #   optimize/saver.sh update                       download the latest screen now
 #   optimize/saver.sh app-update                   both apps from the latest release, now (they also do it alone, every 6 h)
 # Only ADB can change these (sa.urtv.screensaver/.SaverReceiver needs the shell's DUMP).
@@ -68,6 +71,7 @@ case "${1:-}" in
   adhan-volume) send SET "--es adhan_volume $(quote "${2:?usage: optimize/saver.sh adhan-volume 10}")" ;;
   adhan-test)   send ADHAN_TEST ;;
   football)     send SET "--es fdkey $(quote "${2:?usage: optimize/saver.sh football KEY|none}")" ;;
+  adhkar)       send SET "--es adhkar $(quote "${2:?usage: optimize/saver.sh adhkar true|false}")" ;;
   night)        send SET "--es night $(quote "${2:?usage: optimize/saver.sh night true|false}")" ;;
   reminder)     send SET "--es reminder $(quote "${2:?usage: optimize/saver.sh reminder 30}")" ;;
   reminder-test) send REMINDER_TEST ;;
@@ -86,6 +90,20 @@ case "${1:-}" in
       error:*) echo "$out"; exit 1 ;;
       *) echo "$out" ;;
     esac ;;
+  over-apps)   # an accessibility service: the shell adds or removes it in the TV's list (other services kept)
+    svc=sa.urtv.screensaver/sa.urtv.screensaver.IdleWatch
+    cur=$("$PY" -I optimize/tv.py "settings get secure enabled_accessibility_services" | tr -d '\r' | tail -1)
+    [[ "$cur" == null ]] && cur=""
+    rest=$(echo "$cur" | tr ':' '\n' | grep -v -i '^sa.urtv.screensaver/' | grep . | paste -sd: - || true)
+    case "${2:?usage: optimize/saver.sh over-apps true|false}" in
+      true)  new="${rest:+$rest:}$svc" ;;
+      false) new="$rest" ;;
+      *) echo "error: over-apps true|false"; exit 1 ;;
+    esac
+    if [[ -n "$new" ]]; then "$PY" -I optimize/tv.py "settings put secure enabled_accessibility_services $new" >/dev/null
+    else "$PY" -I optimize/tv.py "settings delete secure enabled_accessibility_services" >/dev/null; fi
+    "$PY" -I optimize/tv.py "settings put secure accessibility_enabled $([[ -n "$new" ]] && echo 1 || echo 0)" >/dev/null
+    echo "over-apps: $2" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
   *) sed -n '2,20p' "$0"; exit 1 ;;
 esac

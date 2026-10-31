@@ -48,12 +48,37 @@ final class Adhan {
     // volume steps offered (in the TV's own units, capped at its maximum); 10 unless the owner picks another
     static final int[] VOLUMES = {5, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100};
 
+    // «عشوائي»: each adhan in another of the voices (never the same twice in a row); Fajr's list takes it too
+    static final String RANDOM = "random";
+    static final String RANDOM_LABEL = "عشوائي · صوت مختلف كل أذان";
+
+    /** a voice, or RANDOM (what the settings store) */
+    static boolean isChoice(String id) { return RANDOM.equals(id) || isVoice(id); }
+
+    /** the file to play for a stored choice: RANDOM picks one now. Fajr may get a Fajr voice; the others never
+     *  (it carries «الصلاة خير من النوم»). */
+    static String resolve(Context c, String choice, boolean fajr) {
+        if (!RANDOM.equals(choice)) return choice;
+        java.util.List<String> pool = new java.util.ArrayList<>();
+        for (String[] v : VOICES) {
+            boolean fajrOnly = java.util.Arrays.asList(FAJR_FIRST).contains(v[0]);
+            if (fajr || !fajrOnly) pool.add(v[0]);
+        }
+        android.content.SharedPreferences sp = c.getSharedPreferences("adhan-random", Context.MODE_PRIVATE);
+        String last = sp.getString("last", "");
+        if (pool.size() > 1) pool.remove(last);
+        String pick = pool.get(new java.util.Random().nextInt(pool.size()));
+        sp.edit().putString("last", pick).apply();
+        return pick;
+    }
+
     static boolean isVoice(String id) {
         for (String[] v : VOICES) if (v[0].equals(id)) return true;
         return false;
     }
 
     static String label(String id) {
+        if (RANDOM.equals(id)) return RANDOM_LABEL;
         for (String[] v : VOICES) if (v[0].equals(id)) return v[1];
         return id;
     }

@@ -22,6 +22,7 @@ import java.util.List;
  *       [--es mosque https://mawaqit.net/de/SLUG | SLUG | none] [--es mosque_name 'مسجد الرحمن']
  *       [--es adhan true|false] [--es adhan_voice makki-1] [--es adhan_fajr off|fajr-trabulsi] [--es adhan_volume 10]
  *       [--es night true|false]   (dim the screensaver from 21:00 to 07:00; off by default)
+ *       [--es adhkar true|false]  (morning and evening adhkar beside the clock in their hours; on by default)
  *       [--es fdkey KEY | none]   (football-data.org: the next five games of the clubs it covers)
  *       [--es reminder 30]   (minutes before each adhan for the notice at the top right; 0 = off)
  *   am broadcast -n sa.urtv.screensaver/.SaverReceiver -a sa.urtv.screensaver.REMINDER_TEST   (shows it now)
@@ -77,7 +78,7 @@ public class SaverReceiver extends BroadcastReceiver {
                 return;
             }
             case "sa.urtv.screensaver.ADHAN_TEST":
-                AdhanService.start(c, p.adhanVoice(), true);
+                AdhanService.start(c, Adhan.resolve(c, p.adhanVoice(), false), true);
                 setResultData("adhan: playing " + p.adhanVoice() + " at volume " + p.adhanVolume());
                 return;
             case "sa.urtv.screensaver.REMINDER_TEST":
@@ -162,14 +163,16 @@ public class SaverReceiver extends BroadcastReceiver {
         String adhan = i.getStringExtra("adhan"), adhanVoice = i.getStringExtra("adhan_voice"),
             adhanFajr = i.getStringExtra("adhan_fajr"), adhanVolume = i.getStringExtra("adhan_volume");
         if (adhan != null && !adhan.matches("true|false")) return "error: adhan is true or false";
-        if (adhanVoice != null && !Adhan.isVoice(adhanVoice)) return "error: adhan_voice is one of " + voices();
-        if (adhanFajr != null && !adhanFajr.equals("off") && !Adhan.isVoice(adhanFajr))
+        if (adhanVoice != null && !Adhan.isChoice(adhanVoice)) return "error: adhan_voice is one of " + voices();
+        if (adhanFajr != null && !adhanFajr.equals("off") && !Adhan.isChoice(adhanFajr))
             return "error: adhan_fajr is off or one of " + voices();
         if (adhanVolume != null && !adhanVolume.matches("\\d{1,3}") ) return "error: adhan_volume is a number, e.g. 10";
         String fdkey = i.getStringExtra("fdkey");
         if (fdkey != null && !fdkey.matches("none|[A-Za-z0-9]{8,64}")) return "error: fdkey is the key from football-data.org, or none";
         String night = i.getStringExtra("night");
         if (night != null && !night.matches("true|false")) return "error: night is true or false";
+        String adhkar = i.getStringExtra("adhkar");
+        if (adhkar != null && !adhkar.matches("true|false")) return "error: adhkar is true or false";
         String reminder = i.getStringExtra("reminder");
         if (reminder != null && !reminder.matches("\\d{1,3}")) return "error: reminder is minutes before the adhan, 0 = off";
 
@@ -198,6 +201,7 @@ public class SaverReceiver extends BroadcastReceiver {
         if (adhanVolume != null) p.setAdhanVolume(Math.max(1, Integer.parseInt(adhanVolume)));
         if (reminder != null) p.setReminderMinutes(Integer.parseInt(reminder));
         if (night != null) p.setNightDim(Boolean.parseBoolean(night));
+        if (adhkar != null) p.setAdhkar(Boolean.parseBoolean(adhkar));
         if (fdkey != null) p.setFdKey(fdkey.equals("none") ? "" : fdkey);
         Adhan.update(c, false);   // a new mosque, city or Fajr choice moves the next adhan
         return "saved\n" + describe(c, p);
@@ -213,7 +217,10 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\npanel: " + p.panel() + "\nhome_panel: " + p.homePanel()
             + "\nphotos: " + p.photoMinutes()
             + "\nidle: " + idle(Prefs.idleMs(c))
+            + "\nover-apps: " + IdleWatch.enabled(c) + (IdleWatch.front.isEmpty() ? "" : " | on screen " + IdleWatch.front
+                + (IdleWatch.isInput(IdleWatch.front) ? " (an input: never covered)" : ""))
             + "\nnight dimming: " + p.nightDim()
+            + "\nadhkar: " + p.adhkar()
             + "\nmatches from: " + (p.fdKey().isEmpty() ? "TheSportsDB" : "football-data.org (key set) | last: "
                 + (FdProxy.status(c).isEmpty() ? "no request yet" : FdProxy.status(c))
                 + (FdProxy.log(c).isEmpty() ? "" : "\n  " + FdProxy.log(c).replace("\n", "\n  ")))
@@ -227,6 +234,7 @@ public class SaverReceiver extends BroadcastReceiver {
 
     private static String voices() {
         List<String> out = new ArrayList<>();
+        out.add(Adhan.RANDOM);
         for (String[] v : Adhan.VOICES) out.add(v[0]);
         return Prefs.join(out, " ");
     }
