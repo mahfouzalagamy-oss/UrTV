@@ -1,0 +1,256 @@
+{
+ "date": "2026-11-01",
+ "full run": true,
+ "problems": [],
+ "requests": {
+  "per part": {
+   "Saudi-Arabian Pro League": {
+    "thesportsdb": 30,
+    "rate limited (429)": 2,
+    "minutes": 6.0
+   },
+   "Saudi First Division League": {
+    "thesportsdb": 33,
+    "rate limited (429)": 2,
+    "minutes": 6.3
+   },
+   "English Premier League": {
+    "thesportsdb": 31,
+    "rate limited (429)": 2,
+    "minutes": 6.1
+   },
+   "Spanish La Liga": {
+    "thesportsdb": 38,
+    "rate limited (429)": 2,
+    "minutes": 6.6
+   },
+   "Italian Serie A": {
+    "thesportsdb": 31,
+    "rate limited (429)": 2,
+    "minutes": 6.1
+   },
+   "German Bundesliga": {
+    "thesportsdb": 29,
+    "rate limited (429)": 2,
+    "minutes": 6.0
+   },
+   "French Ligue 1": {
+    "thesportsdb": 28,
+    "rate limited (429)": 2,
+    "minutes": 5.9
+   },
+   "Portuguese Primeira Liga": {
+    "thesportsdb": 30,
+    "rate limited (429)": 2,
+    "minutes": 6.1
+   },
+   "Dutch Eredivisie": {
+    "thesportsdb": 29,
+    "rate limited (429)": 2,
+    "minutes": 6.0
+   },
+   "Turkish Super Lig": {
+    "thesportsdb": 31,
+    "rate limited (429)": 2,
+    "minutes": 6.2
+   },
+   "Egyptian Premier League": {
+    "thesportsdb": 33,
+    "rate limited (429)": 2,
+    "minutes": 6.3
+   },
+   "UAE Pro League": {
+    "thesportsdb": 24,
+    "rate limited (429)": 1,
+    "minutes": 3.7
+   },
+   "Qatar Stars League": {
+    "thesportsdb": 21,
+    "rate limited (429)": 1,
+    "minutes": 3.4
+   },
+   "American Major League Soccer": {
+    "thesportsdb": 39,
+    "rate limited (429)": 2,
+    "minutes": 6.7
+   },
+   "National teams": {
+    "thesportsdb": 96,
+    "rate limited (429)": 6,
+    "minutes": 18.7
+   }
+  },
+  "thesportsdb": 523,
+  "wikidata and wikipedia": 171,
+  "slowest part, minutes": 18.7,
+  "wall minutes": 33.2
+ },
+ "clubs per league": {
+  "Saudi-Arabian Pro League": {
+   "clubs": 21,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "Saudi First Division League": {
+   "clubs": 24,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "English Premier League": {
+   "clubs": 23,
+   "seasons": {
+    "2026-2027": 20,
+    "2025-2026": 20
+   },
+   "last and next rounds": 4
+  },
+  "Spanish La Liga": {
+   "clubs": 23,
+   "seasons": {
+    "2026-2027": 20,
+    "2025-2026": 20
+   },
+   "last and next rounds": 4
+  },
+  "Italian Serie A": {
+   "clubs": 23,
+   "seasons": {
+    "2026-2027": 20,
+    "2025-2026": 20
+   },
+   "last and next rounds": 4
+  },
+  "German Bundesliga": {
+   "clubs": 21,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "French Ligue 1": {
+   "clubs": 20,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "Portuguese Primeira Liga": {
+   "clubs": 20,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "Dutch Eredivisie": {
+   "clubs": 21,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "Turkish Super Lig": {
+   "clubs": 21,
+   "seasons": {
+    "2026-2027": 18,
+    "2025-2026": 18
+   },
+   "last and next rounds": 4
+  },
+  "Egyptian Premier League": {
+   "clubs": 24,
+   "seasons": {
+    "2026-2027": 20,
+    "2025-2026": 21
+   },
+   "last and next rounds": 4
+  },
+  "UAE Pro League": {
+   "clubs": 16,
+   "seasons": {
+    "2026-2027": 14,
+    "2025-2026": 14
+   },
+   "last and next rounds": 4
+  },
+  "Qatar Stars League": {
+   "clubs": 13,
+   "seasons": {
+    "2026-2027": 12,
+    "2025-2026": 12
+   },
+   "last and next rounds": 4
+  },
+  "American Major League Soccer": {
+   "clubs": 30,
+   "seasons": {
+    "2026": 30,
+    "2025": 30
+   },
+   "last and next rounds": 4
+  }
+ },
+ "national teams found in their matches": [
+  "Jordan: 140145 (Jordan_vs_Saudi_Arabia)"
+ ],
+ "national teams not found": [],
+ "id checks": {
+  "checked before": 0,
+  "same team": 343,
+  "another name": [],
+  "no answer": []
+ },
+ "wikidata": {
+  "ids on several or unlike items": [],
+  "looked up before": 0,
+  "TheSportsDB property found by name": false,
+  "TheSportsDB property": [],
+  "matched by id": 0,
+  "matched by a search of clubs": 15,
+  "matched by a search of items": 2,
+  "matched by name": 259
+ },
+ "names told apart": [
+  "135946 Al-Arabi: العربي -> العربي القطري",
+  "137995 Qatar SC: قطر -> نادي قطر"
+ ],
+ "ids checked with": {
+  "Saudi-Arabian Pro League": "lookupteam.php",
+  "Saudi First Division League": "lookupteam.php",
+  "English Premier League": "lookupteam.php",
+  "Spanish La Liga": "lookupteam.php",
+  "Italian Serie A": "lookupteam.php",
+  "German Bundesliga": "lookupteam.php",
+  "French Ligue 1": "lookupteam.php",
+  "Portuguese Primeira Liga": "lookupteam.php",
+  "Dutch Eredivisie": "lookupteam.php",
+  "Turkish Super Lig": "lookupteam.php",
+  "Egyptian Premier League": "lookupteam.php",
+  "UAE Pro League": "lookupteam.php",
+  "Qatar Stars League": "lookupteam.php",
+  "American Major League Soccer": "lookupteam.php",
+  "National teams": "lookupteam.php"
+ },
+ "found in their own matches": {
+  "Spanish La Liga": [
+   "Spanish La Liga 2026-2027: 133730 Osasuna"
+  ]
+ },
+ "Arabic names from": {
+  "curated": 197,
+  "wikidata": 134,
+  "thesportsdb": 4,
+  "translit": 2,
+  "missing": 0
+ },
+ "teams": 337
+}
